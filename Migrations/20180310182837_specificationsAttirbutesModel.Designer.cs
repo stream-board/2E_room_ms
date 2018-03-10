@@ -11,9 +11,10 @@ using System;
 namespace rooms_ms.Migrations
 {
     [DbContext(typeof(RoomContext))]
-    partial class RoomContextModelSnapshot : ModelSnapshot
+    [Migration("20180310182837_specificationsAttirbutesModel")]
+    partial class specificationsAttirbutesModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
