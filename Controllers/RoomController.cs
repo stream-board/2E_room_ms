@@ -50,8 +50,9 @@ namespace rooms_ms.Controllers
             _context.Rooms.Add(item);
             _context.SaveChanges();
 
-            return CreatedAtRoute("GetRoom", new { id = item.Id }, item);
-            //return new ObjectResult(_context.Rooms.FirstOrDefault(t => t.Id == item.Id));
+            //return CreatedAtRoute("GetRoom", new { id = item.Id }, item);
+            //return new ObjectResult(_context.Rooms.ToList());
+            return new ObjectResult(item);
         }
 
         [HttpPut("{id}")]
