@@ -26,7 +26,7 @@ namespace rooms_ms
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddEntityFrameworkNpgsql().AddDbContext<RoomContext>(opt => 
+            services.AddDbContext<RoomContext>(opt => 
                 opt.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
         }
 

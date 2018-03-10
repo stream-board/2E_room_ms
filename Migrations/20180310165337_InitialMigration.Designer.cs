@@ -11,7 +11,7 @@ using System;
 namespace rooms_ms.Migrations
 {
     [DbContext(typeof(RoomContext))]
-    [Migration("20180310013354_InitialMigration")]
+    [Migration("20180310165337_InitialMigration")]
     partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
