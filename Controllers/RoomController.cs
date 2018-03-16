@@ -2,10 +2,11 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using rooms_ms.Models;
 using System.Linq;
+using System;
 
 namespace rooms_ms.Controllers
 {
-    [Route("api/room")]
+    [Route("room")]
     public class RoomController : Controller
     {
         private readonly RoomContext _context;
@@ -13,13 +14,13 @@ namespace rooms_ms.Controllers
         public RoomController(RoomContext context)
         {
             _context = context;
-/*
-            if (_context.TodoItems.Count() == 0)
+
+            if (_context.Rooms.Count() == 0)
             {
-                _context.TodoItems.Add(new TodoItem { Name = "Item1" });
+                _context.Rooms.Add( new Room { Id = 0, NameRoom = "Default" , IdOwner = -1 , participants = new int[0]});
                 _context.SaveChanges();
             }
-*/
+
         }
 
         [HttpGet]
@@ -46,18 +47,61 @@ namespace rooms_ms.Controllers
             {
                 return BadRequest();
             }
+            /*
+            cuando el usuario va a crear una sala => solo se pasa el idOwner y el dueño, 
+                no existe id sala o sea idsala = 0
 
-            _context.Rooms.Add(item);
-            _context.SaveChanges();
+            cuando el usuario es invitado y quiere unirse a sala => viene con un ID de sala:
+                    esa sala existe?
+                     si => añade a participants
+                     no => badrequest            
+            
+            
+             */
+            if(item.Id == 0 ){//no le estoy pasando ningun id de sala
+                //crear sala
+                _context.Rooms.Add(item);
+                _context.SaveChanges();            
+                return CreatedAtRoute("GetRoom", new { id = item.Id }, item);
+            }else{ //se le está pasando un IDSala
+                //verificar si esa sala existe 
+                var it = _context.Rooms.FirstOrDefault(t => t.Id == item.Id);
+                //return new ObjectResult(it);
+            
+                if(it != null && it.IdOwner!=-1){ // es un invitado intentando acceder a una sala existente
+                    //añado el usuario a la lista
+                    int idPart = item.IdOwner;
+                    int[] lista = {idPart};
+                    int[] au = {idPart};
+                    Room aux;
+                    if(it.participants != null){
+                        lista = it.participants.ToList().ToArray();
+                        int len = lista.Length;
+                        var z = new int[len+1];
+                        lista.CopyTo(z,0);
+                        au.CopyTo(z,len);
+                        aux = new Room { participants = z };
+                    }else{
+                        aux = new Room { participants = lista };
+                    }                    
 
-            //return CreatedAtRoute("GetRoom", new { id = item.Id }, item);
-            //return new ObjectResult(_context.Rooms.ToList());
-            return new ObjectResult(item);
+                    it.participants = aux.participants;
+                    aux.DescriptionRoom = "añadiendo uno a la lista";
+                    _context.Rooms.Update(it);
+                    _context.SaveChanges();                
+                    
+                    return new ObjectResult(aux);
+                }else{//un invitado con un ID de sala no existente
+                    return BadRequest(); //no hay sala a la que quiere acceder
+                }
+                 
+            }
         }
 
         [HttpPut("{id}")]
         public IActionResult Update(long id, [FromBody] Room item)
         {
+            /* 
             if (item == null || item.Id != id)
             {
                 return BadRequest();
@@ -76,6 +120,7 @@ namespace rooms_ms.Controllers
 
             _context.Rooms.Update(todo);
             _context.SaveChanges();
+            */
             return new NoContentResult();
         }
 
