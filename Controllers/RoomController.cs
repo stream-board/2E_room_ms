@@ -75,7 +75,7 @@ namespace rooms_ms.Controllers
                     int[] au = {idPart};
                     Room aux;
                     if(it.participants != null){
-                        lista = it.participants.ToList().ToArray();
+                        lista = it.participants.ToArray();
                         int len = lista.Length;
                         var z = new int[len+1];
                         lista.CopyTo(z,0);
@@ -125,17 +125,29 @@ namespace rooms_ms.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(long id)
+        public IActionResult Delete(long id, [FromBody] Room item)
         {
             var todo = _context.Rooms.FirstOrDefault(t => t.Id == id);
             if (todo == null)
             {
-                return NotFound();
+                return new ObjectResult(item);
+                //return NotFound();
             }
-
-            _context.Rooms.Remove(todo);
-            _context.SaveChanges();
-            return new NoContentResult();
+            if(todo.Id == item.IdOwner){// si el que va a eliminar es el owner
+                _context.Rooms.Remove(todo);
+                _context.SaveChanges();
+                return new ObjectResult("Se eliminó la sala "+todo.Id);
+                //return new ObjectResult(todo);
+            }else{
+                int[] list = todo.participants.ToArray();
+                list = list.Where(val => val != item.IdOwner).ToArray();
+                todo.participants = list;
+                _context.Rooms.Update(todo);
+                _context.SaveChanges(); 
+                return new ObjectResult("Se eliminó el usuario "+item.IdOwner+" de la sala "+todo.Id);
+                //return new OkResult();
+            }
+            
         }       
     }
 }
