@@ -130,21 +130,26 @@ namespace rooms_ms.Controllers
             var todo = _context.Rooms.FirstOrDefault(t => t.Id == id);
             if (todo == null)
             {
-                return new ObjectResult(item);
-                //return NotFound();
+                //return new ObjectResult(item);
+                return NotFound();
             }
-            if(todo.Id == item.IdOwner){// si el que va a eliminar es el owner
+            if(todo.IdOwner == item.IdOwner){// si el que va a eliminar es el owner
                 _context.Rooms.Remove(todo);
                 _context.SaveChanges();
                 return new ObjectResult("Se eliminó la sala "+todo.Id);
                 //return new ObjectResult(todo);
             }else{
                 int[] list = todo.participants.ToArray();
-                list = list.Where(val => val != item.IdOwner).ToArray();
-                todo.participants = list;
-                _context.Rooms.Update(todo);
-                _context.SaveChanges(); 
-                return new ObjectResult("Se eliminó el usuario "+item.IdOwner+" de la sala "+todo.Id);
+                if(list.Contains(item.IdOwner)){
+                    list = list.Where(val => val != item.IdOwner).ToArray();
+                    todo.participants = list;
+                    _context.Rooms.Update(todo);
+                    _context.SaveChanges(); 
+                    return new ObjectResult("Se eliminó el usuario "+item.IdOwner+" de la sala "+todo.Id);
+                }else{
+                    return BadRequest();
+                }
+                
                 //return new OkResult();
             }
             
