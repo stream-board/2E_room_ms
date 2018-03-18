@@ -2,7 +2,7 @@ FROM microsoft/dotnet:2.0-sdk
 WORKDIR /rooms_ms
 
 # Copy csproj and restore as distinct layers
-COPY *.csproj ./
+COPY *.csproj /rooms_ms
 RUN dotnet restore
 
 # Copy everything else and build
