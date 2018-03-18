@@ -1,8 +1,8 @@
-FROM microsoft/aspnetcore-build:2.0
+FROM microsoft/aspnetcore-build:2.0 AS build-env
 WORKDIR /rooms_ms
 
 # Copy csproj and restore as distinct layers
-COPY *.csproj ./
+COPY *.csproj /rooms_ms
 RUN dotnet restore
 
 # Copy everything else and build
@@ -13,8 +13,8 @@ RUN dotnet publish -c Release -o out
 FROM microsoft/aspnetcore:2.0
 WORKDIR /rooms_ms
 #COPY ./rooms_ms/out ./
-COPY ./rooms_ms/out .
-RUN ls
+#COPY ./rooms_ms/out .
+COPY --from=build-env /rooms_ms/out .
 ENTRYPOINT ["dotnet", "rooms_ms.dll"]
 
 
