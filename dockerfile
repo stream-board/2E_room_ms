@@ -1,4 +1,4 @@
-FROM microsoft/aspnetcore-build:2.0
+FROM microsoft/dotnet:2.0-sdk
 WORKDIR /rooms_ms
 
 # Copy csproj and restore as distinct layers
@@ -9,12 +9,4 @@ RUN dotnet restore
 COPY . ./
 RUN dotnet publish -c Release -o out
 
-# Build runtime image
-FROM microsoft/aspnetcore:2.0
-WORKDIR /rooms_ms
-#COPY ./rooms_ms/out ./
-COPY ./rooms_ms/out .
-RUN ls
-ENTRYPOINT ["dotnet", "rooms_ms.dll"]
-
-
+ENTRYPOINT ["dotnet", "out/rooms_ms.dll"]
