@@ -9,4 +9,5 @@ RUN dotnet restore
 COPY . ./
 RUN dotnet publish -c Release -o out
 
+#esto ya estaba
 ENTRYPOINT ["dotnet", "out/rooms_ms.dll"]

@@ -5,9 +5,14 @@ services:
     build:
       context: ./
       dockerfile: dockerfile
+    ports:
+      - "4001:4001"
     environment:
       DB_CONNECTION_STRING: "host=postgres_image;port=5432;database=2E_room_db;username=username;password=password"
-  postgres_image:
+    networks:
+      - rooms_ms-network
+
+  rooms_db:
     image: postgres:alpine
     ports:
       - "5432:5432"
@@ -15,8 +20,8 @@ services:
       POSTGRES_USER: "username"
       POSTGRES_PASSWORD: "password"
       POSTGRES_DB: "2E_room_db"
-
-
+    networks:
+      - rooms_ms-network
 
 networks:
   rooms_ms-network:
