@@ -11,7 +11,7 @@ type Rooms struct {
 	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameroom"`
 	DescriptionRoom string `form:"descriptionroom" json:"descriptionroom"`
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idowner"`
-	Participants 	[]int 	`form:"participants" json:"participants"`
+	Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
 }
 
 func InitDb() *gorm.DB {
@@ -28,6 +28,8 @@ func InitDb() *gorm.DB {
 	if !db.HasTable(&Rooms{}) {
 		db.CreateTable(&Rooms{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Rooms{})
+		room := Rooms{IdOwner:0,NameRoom:"default"}
+		db.Create(&room)
 	}
 
 	return db
@@ -50,7 +52,7 @@ func main() {
 		v1.POST("/rooms", PostRoom)
 		v1.GET("/rooms", GetRooms)
 		v1.GET("/rooms/:idroom", GetRoom)
-		//v1.PUT("/rooms/:idroom", UpdateRoom)
+		v1.PUT("/rooms/:id", UpdateRoom)
 		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
 	r.Run(":5000")
@@ -60,20 +62,36 @@ func PostRoom(c *gin.Context) {
 	db := InitDb()
 	defer db.Close()
 
-	var room Rooms
-	c.Bind(&room)
+	var roomFromBody Rooms
+	c.Bind(&roomFromBody)
 
-	if room.NameRoom != "" && room.IdOwner != 0{
-		// INSERT INTO "users" (name) VALUES (user.Name);
-		db.Create(&room)
-		// Display error
-		c.JSON(201, gin.H{"success": room})
+	//if exists the idroom(is a participant) or the nameroom(is a owner)
+	if roomFromBody.NameRoom != "" || roomFromBody.IdRoom != 0{
+		//its a creation of a new room
+		if roomFromBody.NameRoom != ""{
+			db.Create(&roomFromBody)
+			c.JSON(201, roomFromBody)
+		}else{
+			//maybe is a participant, we need to check if the room exist
+			var roomFromDB Rooms
+			db.First(&roomFromDB, roomFromBody.IdRoom)
+			//this room exist?
+			if roomFromDB.NameRoom != ""{
+				//Add participant
+				roomFromDB.Participants = append(roomFromDB.Participants,roomFromBody.IdOwner)
+				db.Save(&roomFromDB)
+				c.JSON(200, gin.H{"success": roomFromDB})
+			}else{
+				//Bad request, the participant wants to join in a inexistent room
+				c.JSON(404, gin.H{"error": "The room that you want to join doesn't exist"})
+			}
+		}
 	} else {
 		// Display error
-		c.JSON(422, gin.H{"error": "Fields are empty"})
+		c.JSON(400, gin.H{"error": "Bad Request"})
 	}
 
-	// curl -i -X POST -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Queen\" }" http://localhost:8080/api/v1/users
+	// curl -i -X POST -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Queen\" }" http://localhost:5000/rooms
 }
 
 func GetRooms(c *gin.Context) {
@@ -89,7 +107,7 @@ func GetRooms(c *gin.Context) {
 	// Display JSON result
 	c.JSON(200, rooms)
 
-	// curl -i http://localhost:8080/api/v1/users
+	// curl -i http://localhost:5000/rooms
 }
 
 func GetRoom(c *gin.Context) {
@@ -111,7 +129,7 @@ func GetRoom(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "Room not found"})
 	}
 
-	// curl -i http://localhost:8080/api/v1/users/1
+	// curl -i http://localhost:5000/rooms/1
 }
 
 func DeleteRoom(c *gin.Context) {
@@ -136,17 +154,28 @@ func DeleteRoom(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "Room not found"})
 	}
 
-	// curl -i -X DELETE http://localhost:8080/api/v1/users/1
+	// curl -i -X DELETE http://localhost:5000/rooms/1
 }
 
 
-/*
-func UpdateUser(c *gin.Context) {
+
+func UpdateRoom(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
 	// Close connection database
 	defer db.Close()
 
+	var a Rooms
+	//fetch the values of the body
+	c.Bind(&a)
+	//fetch the values of the URL
+	//id := c.Params.ByName("id")
+
+	c.JSON(200, gin.H{"success": a})
+	//c.JSON(200, a)
+
+
+	/*
 	// Get id user
 	id := c.Params.ByName("id")
 	var user Users
@@ -180,8 +209,9 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Merlyn\" }" http://localhost:8080/api/v1/users/1
+	*/
 }
-*/
+
 
 func OptionsUser(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE,POST")
