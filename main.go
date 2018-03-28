@@ -6,10 +6,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Users struct {
-	Id        int    `gorm:"AUTO_INCREMENT" form:"id" json:"id"`
-	Firstname string `gorm:"not null" form:"firstname" json:"firstname"`
-	Lastname  string `gorm:"not null" form:"lastname" json:"lastname"`
+type Rooms struct {
+	IdRoom			int    `gorm:"AUTO_INCREMENT" form:"idroom" json:"idroom"`
+	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameroom"`
+	DescriptionRoom string `form:"descriptionroom" json:"descriptionroom"`
+	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idowner"`
+	Participants 	[]int 	`form:"participants" json:"participants"`
 }
 
 func InitDb() *gorm.DB {
@@ -23,9 +25,9 @@ func InitDb() *gorm.DB {
 		panic(err)
 	}
 	// Creating the table
-	if !db.HasTable(&Users{}) {
-		db.CreateTable(&Users{})
-		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Users{})
+	if !db.HasTable(&Rooms{}) {
+		db.CreateTable(&Rooms{})
+		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Rooms{})
 	}
 
 	return db
@@ -43,30 +45,29 @@ func main() {
 
 	r.Use(Cors())
 
-	v1 := r.Group("api/v1")
+	v1 := r.Group("")
 	{
-		v1.POST("/users", PostUser)
-		v1.GET("/users", GetUsers)
-		v1.GET("/users/:id", GetUser)
-		v1.PUT("/users/:id", UpdateUser)
-		v1.DELETE("/users/:id", DeleteUser)
+		v1.POST("/rooms", PostRoom)
+		v1.GET("/rooms", GetRooms)
+		v1.GET("/rooms/:idroom", GetRoom)
+		//v1.PUT("/rooms/:idroom", UpdateRoom)
+		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
-
 	r.Run(":5000")
 }
 
-func PostUser(c *gin.Context) {
+func PostRoom(c *gin.Context) {
 	db := InitDb()
 	defer db.Close()
 
-	var user Users
-	c.Bind(&user)
+	var room Rooms
+	c.Bind(&room)
 
-	if user.Firstname != "" && user.Lastname != "" {
+	if room.NameRoom != "" && room.IdOwner != 0{
 		// INSERT INTO "users" (name) VALUES (user.Name);
-		db.Create(&user)
+		db.Create(&room)
 		// Display error
-		c.JSON(201, gin.H{"success": user})
+		c.JSON(201, gin.H{"success": room})
 	} else {
 		// Display error
 		c.JSON(422, gin.H{"error": "Fields are empty"})
@@ -75,44 +76,71 @@ func PostUser(c *gin.Context) {
 	// curl -i -X POST -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Queen\" }" http://localhost:8080/api/v1/users
 }
 
-func GetUsers(c *gin.Context) {
+func GetRooms(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
 	// Close connection database
 	defer db.Close()
 
-	var users []Users
+	var rooms []Rooms
 	// SELECT * FROM users
-	db.Find(&users)
+	db.Find(&rooms)
 
 	// Display JSON result
-	c.JSON(200, users)
+	c.JSON(200, rooms)
 
 	// curl -i http://localhost:8080/api/v1/users
 }
 
-func GetUser(c *gin.Context) {
+func GetRoom(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
 	// Close connection database
 	defer db.Close()
 
-	id := c.Params.ByName("id")
-	var user Users
+	idroom := c.Params.ByName("idroom")
+	var room Rooms
 	// SELECT * FROM users WHERE id = 1;
-	db.First(&user, id)
+	db.First(&room, idroom)
 
-	if user.Id != 0 {
+	if room.IdRoom != 0 {
 		// Display JSON result
-		c.JSON(200, user)
+		c.JSON(200, room)
 	} else {
 		// Display JSON error
-		c.JSON(404, gin.H{"error": "User not found"})
+		c.JSON(404, gin.H{"error": "Room not found"})
 	}
 
 	// curl -i http://localhost:8080/api/v1/users/1
 }
 
+func DeleteRoom(c *gin.Context) {
+	// Connection to the database
+	db := InitDb()
+	// Close connection database
+	defer db.Close()
+
+	// Get id user
+	idroom := c.Params.ByName("idroom")
+	var room Rooms
+	// SELECT * FROM users WHERE id = 1;
+	db.First(&room, idroom)
+
+	if room.IdRoom != 0 {
+		// DELETE FROM users WHERE id = user.Id
+		db.Delete(&room)
+		// Display JSON result
+		c.JSON(200, gin.H{"success": "Room #" + idroom + " deleted"})
+	} else {
+		// Display JSON error
+		c.JSON(404, gin.H{"error": "Room not found"})
+	}
+
+	// curl -i -X DELETE http://localhost:8080/api/v1/users/1
+}
+
+
+/*
 func UpdateUser(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
@@ -153,34 +181,10 @@ func UpdateUser(c *gin.Context) {
 
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Merlyn\" }" http://localhost:8080/api/v1/users/1
 }
-
-func DeleteUser(c *gin.Context) {
-	// Connection to the database
-	db := InitDb()
-	// Close connection database
-	defer db.Close()
-
-	// Get id user
-	id := c.Params.ByName("id")
-	var user Users
-	// SELECT * FROM users WHERE id = 1;
-	db.First(&user, id)
-
-	if user.Id != 0 {
-		// DELETE FROM users WHERE id = user.Id
-		db.Delete(&user)
-		// Display JSON result
-		c.JSON(200, gin.H{"success": "User #" + id + " deleted"})
-	} else {
-		// Display JSON error
-		c.JSON(404, gin.H{"error": "User not found"})
-	}
-
-	// curl -i -X DELETE http://localhost:8080/api/v1/users/1
-}
+*/
 
 func OptionsUser(c *gin.Context) {
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE,POST, PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE,POST")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	c.Next()
 }
