@@ -6,13 +6,32 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Rooms struct {
+type Room struct {
 	IdRoom			int    `gorm:"AUTO_INCREMENT" form:"idroom" json:"idroom"`
 	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameroom"`
 	DescriptionRoom string `form:"descriptionroom" json:"descriptionroom"`
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idowner"`
-	Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
+	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
+	Participants []Participant
 }
+
+type Participant struct{
+	Id 				int		`gorm:"AUTO_INCREMENT" form:"idparttable" json:"idparttable"`
+	IdRoom			int		`gorm:"not null" form:"idroomparttable" json:"idroomparttable"`
+	IdParticipant 	int		`gorm:"not null" form:"idparticipantparttable" json:"idparticipantparttable"`
+}
+
+func rem(s []int, i int) []int {
+	var saux []int
+	  for _, v := range s {
+		if v == i{
+		  continue
+		}else{
+		  saux = append(saux,v)
+		}
+	  }
+	  return saux
+  }
 
 func InitDb() *gorm.DB {
 	// Openning file
@@ -25,11 +44,13 @@ func InitDb() *gorm.DB {
 		panic(err)
 	}
 	// Creating the table
-	if !db.HasTable(&Rooms{}) {
-		db.CreateTable(&Rooms{})
-		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Rooms{})
-		room := Rooms{IdOwner:0,NameRoom:"default"}
-		db.Create(&room)
+	if !db.HasTable(&Room{}) {
+		db.CreateTable(&Room{})
+		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Room{})
+	}
+	if !db.HasTable(&Participant{}) {
+		db.CreateTable(&Participant{})
+		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Participant{})
 	}
 
 	return db
@@ -62,7 +83,7 @@ func PostRoom(c *gin.Context) {
 	db := InitDb()
 	defer db.Close()
 
-	var roomFromBody Rooms
+	var roomFromBody Room
 	c.Bind(&roomFromBody)
 
 	//if exists the idroom(is a participant) or the nameroom(is a owner)
@@ -70,15 +91,15 @@ func PostRoom(c *gin.Context) {
 		//its a creation of a new room
 		if roomFromBody.NameRoom != ""{
 			db.Create(&roomFromBody)
-			c.JSON(201, roomFromBody)
+			c.JSON(201, gin.H{"success": roomFromBody})
 		}else{
 			//maybe is a participant, we need to check if the room exist
-			var roomFromDB Rooms
+			var roomFromDB Room
 			db.First(&roomFromDB, roomFromBody.IdRoom)
 			//this room exist?
 			if roomFromDB.NameRoom != ""{
-				//Add participant
-				roomFromDB.Participants = append(roomFromDB.Participants,roomFromBody.IdOwner)
+				//create participant in Participant Table
+//TODO
 				db.Save(&roomFromDB)
 				c.JSON(200, gin.H{"success": roomFromDB})
 			}else{
@@ -100,7 +121,7 @@ func GetRooms(c *gin.Context) {
 	// Close connection database
 	defer db.Close()
 
-	var rooms []Rooms
+	var rooms []Room
 	// SELECT * FROM users
 	db.Find(&rooms)
 
@@ -117,7 +138,7 @@ func GetRoom(c *gin.Context) {
 	defer db.Close()
 
 	idroom := c.Params.ByName("idroom")
-	var room Rooms
+	var room Room
 	// SELECT * FROM users WHERE id = 1;
 	db.First(&room, idroom)
 
@@ -140,7 +161,7 @@ func DeleteRoom(c *gin.Context) {
 
 	// Get id user
 	idroom := c.Params.ByName("idroom")
-	var room Rooms
+	var room Room
 	// SELECT * FROM users WHERE id = 1;
 	db.First(&room, idroom)
 
@@ -165,7 +186,7 @@ func UpdateRoom(c *gin.Context) {
 	// Close connection database
 	defer db.Close()
 
-	var a Rooms
+	var a Room
 	//fetch the values of the body
 	c.Bind(&a)
 	//fetch the values of the URL

@@ -17,6 +17,8 @@ https://gist.github.com/EtienneR/ed522e3d31bc69a9dec3335e639fcf60
 4. docker
 http://himarsh.org/build-restful-api-microservice-with-go/
 
+https://github.com/narenaryan/go-mysql-rest-api/blob/master/gitter.go
+
 ROOM MICRO SERVICE This Microservice to StreamBoard is responsible for the manage of all the rooms and their participants. ##Technologies The microservice is made in C# language and .Net Core Framework. The database is PostgreSQL.
 
 Description The microservice use the table Room, this have the next attributes:
