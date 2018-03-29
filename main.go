@@ -7,18 +7,18 @@ import (
 )
 
 type Room struct {
-	IdRoom			int    `gorm:"AUTO_INCREMENT" form:"idroom" json:"idroom"`
+	IdRoom			int    `gorm:"primary_key" form:"idroom" json:"idroom"`
 	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameroom"`
 	DescriptionRoom string `form:"descriptionroom" json:"descriptionroom"`
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idowner"`
 	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
-	Participants []Participant
+	Participants []Participant 
 }
 
 type Participant struct{
-	Id 				int		`gorm:"AUTO_INCREMENT" form:"idparttable" json:"idparttable"`
-	IdRoom			int		`gorm:"not null" form:"idroomparttable" json:"idroomparttable"`
-	IdParticipant 	int		`gorm:"not null" form:"idparticipantparttable" json:"idparticipantparttable"`
+	Id 				int		`gorm:"primary_key" form:"id" json:"id"`
+	IdRoom			int		`gorm:"not null" form:"idroom" json:"idroom"`
+	IdParticipant 	int		`gorm:"not null" form:"idparticipant" json:"idparticipant"`
 }
 
 func rem(s []int, i int) []int {
@@ -73,7 +73,7 @@ func main() {
 		v1.POST("/rooms", PostRoom)
 		v1.GET("/rooms", GetRooms)
 		v1.GET("/rooms/:idroom", GetRoom)
-		v1.PUT("/rooms/:id", UpdateRoom)
+		v1.PUT("/rooms/", UpdateRoom)
 		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
 	r.Run(":5000")
@@ -95,17 +95,22 @@ func PostRoom(c *gin.Context) {
 		}else{
 			//maybe is a participant, we need to check if the room exist
 			var roomFromDB Room
-			db.First(&roomFromDB, roomFromBody.IdRoom)
+			db.Where("id_room = ?", roomFromBody.IdRoom ).First(&roomFromDB)
 			//this room exist?
-			if roomFromDB.NameRoom != ""{
+			if roomFromDB.NameRoom != ""{//exist this room in database
 				//create participant in Participant Table
-//TODO
-				db.Save(&roomFromDB)
+				var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
+				db.Create(&newPart)
+				var participants []Participant
+				db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
+				roomFromDB.Participants = participants
+				db.Save(roomFromDB)
 				c.JSON(200, gin.H{"success": roomFromDB})
 			}else{
 				//Bad request, the participant wants to join in a inexistent room
-				c.JSON(404, gin.H{"error": "The room that you want to join doesn't exist"})
+				c.JSON(404, gin.H{"error": "doesn't exist the room"})
 			}
+			
 		}
 	} else {
 		// Display error
@@ -140,10 +145,14 @@ func GetRoom(c *gin.Context) {
 	idroom := c.Params.ByName("idroom")
 	var room Room
 	// SELECT * FROM users WHERE id = 1;
-	db.First(&room, idroom)
+	db.Where("id_room = ?",idroom).First(&room)
 
 	if room.IdRoom != 0 {
 		// Display JSON result
+		var participants []Participant
+		db.Where("id_room = ?",idroom).Find(&participants)
+		room.Participants = participants
+		db.Save(&room)
 		c.JSON(200, room)
 	} else {
 		// Display JSON error
@@ -159,17 +168,41 @@ func DeleteRoom(c *gin.Context) {
 	// Close connection database
 	defer db.Close()
 
-	// Get id user
+	// Get id user from URL
 	idroom := c.Params.ByName("idroom")
-	var room Room
-	// SELECT * FROM users WHERE id = 1;
-	db.First(&room, idroom)
+	//get room from body
+	var roomFromBody Room
+	c.Bind(&roomFromBody)
 
-	if room.IdRoom != 0 {
-		// DELETE FROM users WHERE id = user.Id
-		db.Delete(&room)
-		// Display JSON result
-		c.JSON(200, gin.H{"success": "Room #" + idroom + " deleted"})
+
+	var roomFromDB Room
+	// SELECT * FROM users WHERE id = 1;
+	db.Where("id_room = ?",idroom).First(&roomFromDB)
+
+
+	if roomFromDB.NameRoom != "" {
+		//is the owner of the room
+		if roomFromDB.IdOwner == roomFromBody.IdOwner{
+			//get all participants of this room
+			var participants []Participant
+			db.Where("id_room = ?",idroom).Find(&participants)
+			//Delete all participants
+			db.Delete(&participants)
+			//Delete the room of database
+			db.Delete(&roomFromDB)
+			roomFromDB.Participants = participants
+			// Display JSON result
+			c.JSON(200, gin.H{"success": roomFromDB})
+		}else{
+			//is a participant
+			var participant2Delete []Participant
+			db.Where("id_participant = ?",roomFromBody.IdOwner).Find(&participant2Delete)
+			db.Where("id_participant = ?",roomFromBody.IdOwner).Delete(&Participant{})
+			//db.Delete(&participant2Delete)
+			c.JSON(200, gin.H{"success": participant2Delete})
+		}
+		
+
 	} else {
 		// Display JSON error
 		c.JSON(404, gin.H{"error": "Room not found"})
@@ -181,21 +214,15 @@ func DeleteRoom(c *gin.Context) {
 
 
 func UpdateRoom(c *gin.Context) {
+
 	// Connection to the database
 	db := InitDb()
 	// Close connection database
 	defer db.Close()
 
-	var a Room
-	//fetch the values of the body
-	c.Bind(&a)
-	//fetch the values of the URL
-	//id := c.Params.ByName("id")
-
-	c.JSON(200, gin.H{"success": a})
-	//c.JSON(200, a)
-
-
+	var participantes []Participant
+	db.Find(&participantes)
+	c.JSON(200, participantes)
 	/*
 	// Get id user
 	id := c.Params.ByName("id")
@@ -232,6 +259,7 @@ func UpdateRoom(c *gin.Context) {
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Merlyn\" }" http://localhost:8080/api/v1/users/1
 	*/
 }
+
 
 
 func OptionsUser(c *gin.Context) {
