@@ -10,6 +10,13 @@ type Users struct {
 	Id        int    `gorm:"AUTO_INCREMENT" form:"id" json:"id"`
 	Firstname string `gorm:"not null" form:"firstname" json:"firstname"`
 	Lastname  string `gorm:"not null" form:"lastname" json:"lastname"`
+	Emails 		[]Email
+}
+
+type Email struct{
+	Id 		int `gorm:"AUTO_INCREMENT" form:"id" json:"id"`
+	idUser	int  `gorm:"not null" form:"iduser" json:"iduser"`
+	Email	string `gorm:"not null" form:"email" json:"email"`
 }
 
 func InitDb() *gorm.DB {
@@ -102,6 +109,11 @@ func GetUser(c *gin.Context) {
 	// SELECT * FROM users WHERE id = 1;
 	db.First(&user, id)
 
+	var emails Email
+
+	db.Where("iduser = ?",id).Find(&emails)
+	c.JSON(200, emails)
+	/*
 	if user.Id != 0 {
 		// Display JSON result
 		c.JSON(200, user)
@@ -109,7 +121,7 @@ func GetUser(c *gin.Context) {
 		// Display JSON error
 		c.JSON(404, gin.H{"error": "User not found"})
 	}
-
+*/
 	// curl -i http://localhost:8080/api/v1/users/1
 }
 
