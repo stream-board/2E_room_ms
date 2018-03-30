@@ -4,5 +4,7 @@ services:
   rooms-ms:
     build: .
     command: run main.go
+    ports: 
+      - "4004:4004"
 
 #https://github.com/EarvinKayonga/gin-container/blob/master/.travis.yml

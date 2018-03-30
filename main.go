@@ -76,7 +76,7 @@ func main() {
 		v1.PUT("/rooms/", UpdateRoom)
 		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
-	r.Run(":5000")
+	r.Run(":4004")
 }
 
 func PostRoom(c *gin.Context) {
