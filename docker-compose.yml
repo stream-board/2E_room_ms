@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+  rooms-ms:
+    build: .
+    command: run main.go
+
+#https://github.com/EarvinKayonga/gin-container/blob/master/.travis.yml
