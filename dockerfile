@@ -16,7 +16,7 @@ RUN     go get github.com/mattn/go-sqlite3
 # Restore godep dependencies
 #RUN godep restore
 
-EXPOSE 4004
+EXPOSE 4001
 ENTRYPOINT  ["/usr/local/go/bin/go"]
 CMD     ["run", "src/main.go"]
 

@@ -5,6 +5,6 @@ services:
     build: .
     command: run main.go
     ports: 
-      - "4004:4004"
+      - "4001:4001"
 
 #https://github.com/EarvinKayonga/gin-container/blob/master/.travis.yml
