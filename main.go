@@ -73,7 +73,7 @@ func main() {
 		v1.POST("/rooms", PostRoom)
 		v1.GET("/rooms", GetRooms)
 		v1.GET("/rooms/:idroom", GetRoom)
-		v1.PUT("/rooms/", UpdateRoom)
+		//v1.PUT("/rooms/", UpdateRoom)
 		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
 	r.Run(":4001")
@@ -91,7 +91,7 @@ func PostRoom(c *gin.Context) {
 		//its a creation of a new room
 		if roomFromBody.NameRoom != ""{
 			db.Create(&roomFromBody)
-			c.JSON(201, gin.H{"success": roomFromBody})
+			c.JSON(201, roomFromBody )
 		}else{
 			//maybe is a participant, we need to check if the room exist
 			var roomFromDB Room
@@ -105,7 +105,7 @@ func PostRoom(c *gin.Context) {
 				db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
 				roomFromDB.Participants = participants
 				db.Save(roomFromDB)
-				c.JSON(200, gin.H{"success": roomFromDB})
+				c.JSON(200, roomFromDB)
 			}else{
 				//Bad request, the participant wants to join in a inexistent room
 				c.JSON(404, gin.H{"error": "doesn't exist the room"})
@@ -192,14 +192,14 @@ func DeleteRoom(c *gin.Context) {
 			db.Delete(&roomFromDB)
 			roomFromDB.Participants = participants
 			// Display JSON result
-			c.JSON(200, gin.H{"success": roomFromDB})
+			c.JSON(200, roomFromDB )
 		}else{
 			//is a participant
 			var participant2Delete []Participant
 			db.Where("id_participant = ?",roomFromBody.IdOwner).Find(&participant2Delete)
 			db.Where("id_participant = ?",roomFromBody.IdOwner).Delete(&Participant{})
 			//db.Delete(&participant2Delete)
-			c.JSON(200, gin.H{"success": participant2Delete})
+			c.JSON(200, participant2Delete)
 		}
 		
 
@@ -212,7 +212,7 @@ func DeleteRoom(c *gin.Context) {
 }
 
 
-
+/*
 func UpdateRoom(c *gin.Context) {
 
 	// Connection to the database
@@ -223,7 +223,7 @@ func UpdateRoom(c *gin.Context) {
 	var participantes []Participant
 	db.Find(&participantes)
 	c.JSON(200, participantes)
-	/*
+	
 	// Get id user
 	id := c.Params.ByName("id")
 	var user Users
@@ -257,9 +257,9 @@ func UpdateRoom(c *gin.Context) {
 	}
 
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Merlyn\" }" http://localhost:8080/api/v1/users/1
-	*/
+	
 }
-
+*/
 
 
 func OptionsUser(c *gin.Context) {
