@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
@@ -17,8 +18,8 @@ type Room struct {
 
 type Participant struct{
 	Id 				int		`gorm:"primary_key" form:"id" json:"id"`
-	IdRoom			int		`gorm:"not null" form:"idroom" json:"idroom"`
-	IdParticipant 	int		`gorm:"not null" form:"idparticipant" json:"idparticipant"`
+	IdRoom			int		`gorm:"not null" form:"idroom" json:"idRoom"`
+	IdParticipant 	int		`gorm:"not null" form:"idparticipant" json:"idParticipant"`
 }
 
 func rem(s []int, i int) []int {
@@ -99,7 +100,9 @@ func PostRoom(c *gin.Context) {
 			//this room exist?
 			if roomFromDB.NameRoom != ""{//exist this room in database
 				//create participant in Participant Table
+				fmt.Println(roomFromBody)
 				var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
+
 				db.Create(&newPart)
 				var participants []Participant
 				db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
