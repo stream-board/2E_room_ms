@@ -7,12 +7,12 @@ import (
 )
 
 type Room struct {
-	IdRoom			int    `gorm:"primary_key" form:"idroom" json:"idroom"`
-	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameroom"`
-	DescriptionRoom string `form:"descriptionroom" json:"descriptionroom"`
-	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idowner"`
+	IdRoom			int    `gorm:"primary_key" form:"idroom" json:"idRoom"`
+	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameRoom"`
+	DescriptionRoom string `form:"descriptionroom" json:"descriptionRoom"`
+	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
 	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
-	Participants []Participant 
+	Participants []Participant
 }
 
 type Participant struct{
@@ -110,7 +110,7 @@ func PostRoom(c *gin.Context) {
 				//Bad request, the participant wants to join in a inexistent room
 				c.JSON(404, gin.H{"error": "doesn't exist the room"})
 			}
-			
+
 		}
 	} else {
 		// Display error
@@ -199,9 +199,9 @@ func DeleteRoom(c *gin.Context) {
 			db.Where("id_participant = ?",roomFromBody.IdOwner).Find(&participant2Delete)
 			db.Where("id_participant = ?",roomFromBody.IdOwner).Delete(&Participant{})
 			//db.Delete(&participant2Delete)
-			c.JSON(200, participant2Delete)
+			c.JSON(200, roomFromBody)
 		}
-		
+
 
 	} else {
 		// Display JSON error
@@ -223,7 +223,7 @@ func UpdateRoom(c *gin.Context) {
 	var participantes []Participant
 	db.Find(&participantes)
 	c.JSON(200, participantes)
-	
+
 	// Get id user
 	id := c.Params.ByName("id")
 	var user Users
@@ -257,7 +257,7 @@ func UpdateRoom(c *gin.Context) {
 	}
 
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"firstname\": \"Thea\", \"lastname\": \"Merlyn\" }" http://localhost:8080/api/v1/users/1
-	
+
 }
 */
 
