@@ -99,7 +99,6 @@ func PostRoom(c *gin.Context) {
 			//this room exist?
 			if roomFromDB.NameRoom != ""{//exist this room in database
 				//create participant in Participant Table
-				fmt.Println(roomFromBody)
 				var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
 
 				db.Create(&newPart)
