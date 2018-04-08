@@ -10,6 +10,7 @@ type Room struct {
 	IdRoom			int    `gorm:"primary_key" form:"idroom" json:"idRoom"`
 	NameRoom 		string `gorm:"not null" form:"nameroom" json:"nameRoom"`
 	DescriptionRoom string `form:"descriptionroom" json:"descriptionRoom"`
+	CategoryRoom string `gorm:"not null" form:"categoryroom" json:"categoryRoom"`
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
 	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
 	Participants []Participant
