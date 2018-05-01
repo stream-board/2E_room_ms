@@ -14,6 +14,7 @@ type Room struct {
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
 	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
 	Participants []Participant
+	Banned []int
 }
 
 type Participant struct{
@@ -72,12 +73,35 @@ func main() {
 	v1 := r.Group("")
 	{
 		v1.POST("/rooms", PostRoom)
+		v1.POST("/rooms/:idroom/ban", PostBanned)
 		v1.GET("/rooms", GetRooms)
 		v1.GET("/rooms/:idroom", GetRoom)
 		//v1.PUT("/rooms/", UpdateRoom)
 		v1.DELETE("/rooms/:idroom", DeleteRoom)
 	}
 	r.Run(":4001")
+}
+
+func PostBanned(c *gin.Context) {
+	db := InitDb()
+	defer db.Close()
+
+	idroom := c.Params.ByName("idroom")
+
+	var user Participant
+	c.Bind(&user)
+
+	var roomFromDB Room
+	db.Where("id_room = ?", idroom ).First(&roomFromDB)
+	//this room exist?
+	if roomFromDB.NameRoom != ""{//exist this room in database
+		roomFromDB.Banned = append(roomFromDB.Banned, user.id)
+		db.Save(roomFromDB)
+		c.JSON(200, roomFromDB)
+	}else{
+		//Bad request, the participant wants to join in a inexistent room
+		c.JSON(404, gin.H{"error": "doesn't exist the room"})
+	}
 }
 
 func PostRoom(c *gin.Context) {
