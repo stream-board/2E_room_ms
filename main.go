@@ -4,6 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
+	"strconv"
+	"fmt"
 )
 
 type Room struct {
@@ -14,13 +16,23 @@ type Room struct {
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
 	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
 	Participants []Participant
-	Banned []int
+	BannedList []Banned
 }
 
 type Participant struct{
 	Id 				int		`gorm:"primary_key" form:"id" json:"id"`
 	IdRoom			int		`gorm:"not null" form:"idroom" json:"idRoom"`
 	IdParticipant 	int		`gorm:"not null" form:"idparticipant" json:"idParticipant"`
+}
+
+type Banned struct{
+	Id 				int		`gorm:"primary_key" form:"id" json:"id"`
+	IdRoom			int		`gorm:"not null" form:"idroom" json:"idRoom"`
+	IdBanned 	int		`gorm:"not null" form:"idbanned" json:"idBanned"`
+}
+
+type BannedInput struct{
+	Id int
 }
 
 func rem(s []int, i int) []int {
@@ -54,6 +66,10 @@ func InitDb() *gorm.DB {
 		db.CreateTable(&Participant{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Participant{})
 	}
+	if !db.HasTable(&Banned{}) {
+		db.CreateTable(&Banned{})
+		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Banned{})
+	}
 
 	return db
 }
@@ -86,16 +102,25 @@ func PostBanned(c *gin.Context) {
 	db := InitDb()
 	defer db.Close()
 
-	idroom := c.Params.ByName("idroom")
+	idroom, err := strconv.Atoi(c.Params.ByName("idroom"))
+	if err != nil {
+		//EndMePls
+	}
 
-	var user Participant
-	c.Bind(&user)
+	var bannedFromBody BannedInput
+	c.Bind(&bannedFromBody)
+	fmt.Println(bannedFromBody)
 
 	var roomFromDB Room
 	db.Where("id_room = ?", idroom ).First(&roomFromDB)
 	//this room exist?
 	if roomFromDB.NameRoom != ""{//exist this room in database
-		roomFromDB.Banned = append(roomFromDB.Banned, user.id)
+		var newBanned = Banned{ IdRoom: idroom, IdBanned: bannedFromBody.Id }
+
+		db.Create(&newBanned)
+		var banned []Banned
+		db.Where("id_room = ?", idroom).Find(&banned)
+		roomFromDB.BannedList = banned
 		db.Save(roomFromDB)
 		c.JSON(200, roomFromDB)
 	}else{
@@ -123,15 +148,20 @@ func PostRoom(c *gin.Context) {
 			db.Where("id_room = ?", roomFromBody.IdRoom ).First(&roomFromDB)
 			//this room exist?
 			if roomFromDB.NameRoom != ""{//exist this room in database
-				//create participant in Participant Table
-				var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
+				var banned Banned
+				db.Where("id_room = ? AND id_banned = ?", roomFromDB.IdRoom, roomFromBody.IdOwner).First(&banned)
+				if banned.IdBanned != 0 {
+					c.JSON(401, gin.H{"error": "banned"})
+				} else {
+					var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
 
-				db.Create(&newPart)
-				var participants []Participant
-				db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
-				roomFromDB.Participants = participants
-				db.Save(roomFromDB)
-				c.JSON(200, roomFromDB)
+					db.Create(&newPart)
+					var participants []Participant
+					db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
+					roomFromDB.Participants = participants
+					db.Save(roomFromDB)
+					c.JSON(200, roomFromDB)
+				}
 			}else{
 				//Bad request, the participant wants to join in a inexistent room
 				c.JSON(404, gin.H{"error": "doesn't exist the room"})
@@ -214,6 +244,11 @@ func DeleteRoom(c *gin.Context) {
 			db.Where("id_room = ?",idroom).Find(&participants)
 			//Delete all participants
 			db.Delete(&participants)
+			//get all banned of this room
+			var banned []Banned
+			db.Where("id_room = ?",idroom).Find(&banned)
+			//Delete all banned
+			db.Delete(&banned)
 			//Delete the room of database
 			db.Delete(&roomFromDB)
 			roomFromDB.Participants = participants
