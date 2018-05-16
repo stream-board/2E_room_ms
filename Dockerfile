@@ -7,11 +7,7 @@ ADD         . /go/src/gin-container
 
 RUN     go get github.com/gin-gonic/gin
 RUN     go get github.com/jinzhu/gorm
-RUN     go get github.com/mattn/go-sqlite3
-
-# RUN     go install github.com/gin-gonic/gin
-# RUN     go install github.com/jinzhu/gorm
-# RUN     go install github.com/mattn/go-sqlite3
+RUN 	go get github.com/jinzhu/gorm/dialects/mysql
 
 # Restore godep dependencies
 #RUN godep restore

@@ -1,10 +1,22 @@
 version: '2'
 
 services:
+  rooms-db:
+    image: mysql:5.7.22
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_USER: roomsUser
+      MYSQL_PASSWORD: 123
+      MYSQL_DATABASE: rooms
+      MYSQL_HOST: rooms-db
   rooms-ms:
     build: .
     command: run main.go
     ports: 
       - "4001:4001" 
+    depends_on:
+      - rooms-db
 
 #https://github.com/EarvinKayonga/gin-container/blob/master/.travis.yml

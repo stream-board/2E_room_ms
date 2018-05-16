@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"strconv"
 	"fmt"
 )
@@ -14,7 +14,7 @@ type Room struct {
 	DescriptionRoom string `form:"descriptionroom" json:"descriptionRoom"`
 	CategoryRoom string `gorm:"not null" form:"categoryroom" json:"categoryRoom"`
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
-	//Participants 	[]int 	`gorm:"type:int[]" form:"participants" json:"participants"`
+	Password		string `form:"password" json:"password"`
 	Participants []Participant
 	BannedList []Banned
 }
@@ -49,7 +49,7 @@ func rem(s []int, i int) []int {
 
 func InitDb() *gorm.DB {
 	// Openning file
-	db, err := gorm.Open("sqlite3", "./data.db")
+	db, err := gorm.Open("mysql", "roomsUser:123@/rooms?charset=utf8&parseTime=True&loc=Local")
 	// Display SQL queries
 	db.LogMode(true)
 
@@ -70,7 +70,7 @@ func InitDb() *gorm.DB {
 		db.CreateTable(&Banned{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Banned{})
 	}
-
+	defer db.Close()
 	return db
 }
 
