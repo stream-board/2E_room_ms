@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"fmt"
 )
@@ -49,12 +49,16 @@ func rem(s []int, i int) []int {
 
 func InitDb() *gorm.DB {
 	// Openning file
-	db, err := gorm.Open("mysql", "roomsUser:123@/rooms?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "roomsUser:123@tcp(192.168.99.103:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
+	//	db, err := gorm.Open("mysql", "roomsUser:123@tcp(0.0.0.0:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
+
 	// Display SQL queries
 	db.LogMode(true)
-
+	fmt.Println(db)
 	// Error
 	if err != nil {
+		fmt.Println("JAJAJAJAJA")
+		fmt.Println(err)
 		panic(err)
 	}
 	// Creating the table
