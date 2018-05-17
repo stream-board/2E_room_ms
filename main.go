@@ -49,7 +49,7 @@ func rem(s []int, i int) []int {
 
 func InitDb() *gorm.DB {
 	// Openning file
-	db, err := gorm.Open("mysql", "roomsUser:123@tcp(192.168.99.103:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "roomsUser:123@tcp(127.0.0.1:3306)/roomsDB?charset=utf8&parseTime=True&loc=Local")
 	//	db, err := gorm.Open("mysql", "roomsUser:123@tcp(0.0.0.0:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
 
 	// Display SQL queries
@@ -63,15 +63,15 @@ func InitDb() *gorm.DB {
 	}
 	// Creating the table
 	if !db.HasTable(&Room{}) {
-		db.CreateTable(&Room{})
+		//db.CreateTable(&Room{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Room{})
 	}
 	if !db.HasTable(&Participant{}) {
-		db.CreateTable(&Participant{})
+		//db.CreateTable(&Participant{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Participant{})
 	}
 	if !db.HasTable(&Banned{}) {
-		db.CreateTable(&Banned{})
+		//db.CreateTable(&Banned{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Banned{})
 	}
 	defer db.Close()
@@ -183,15 +183,21 @@ func PostRoom(c *gin.Context) {
 func GetRooms(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
-	// Close connection database
-	defer db.Close()
 
 	var rooms []Room
-	// SELECT * FROM users
+	// SELECT * FROM rooms
+	fmt.Println("todo va bien 1")
 	db.Find(&rooms)
+	fmt.Println("todo va bien 2")
+
+	fmt.Println(rooms)
+	//db.Find(&rooms)
 
 	// Display JSON result
 	c.JSON(200, rooms)
+
+	// Close connection database
+	defer db.Close()
 
 	// curl -i http://localhost:5000/rooms
 }
@@ -199,18 +205,16 @@ func GetRooms(c *gin.Context) {
 func GetRoom(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
-	// Close connection database
-	defer db.Close()
 
 	idroom := c.Params.ByName("idroom")
 	var room Room
 	// SELECT * FROM users WHERE id = 1;
-	db.Where("id_room = ?",idroom).First(&room)
+	db.Table("rooms").Where("id_room = ?",idroom).First(&room)
 
 	if room.IdRoom != 0 {
 		// Display JSON result
 		var participants []Participant
-		db.Where("id_room = ?",idroom).Find(&participants)
+		db.Table("rooms").Where("id_room = ?",idroom).Find(&participants)
 		room.Participants = participants
 		db.Save(&room)
 		c.JSON(200, room)
@@ -219,6 +223,8 @@ func GetRoom(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "Room not found"})
 	}
 
+	// Close connection database
+	defer db.Close()
 	// curl -i http://localhost:5000/rooms/1
 }
 
