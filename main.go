@@ -16,7 +16,6 @@ type Room struct {
 	IdOwner 		int 	`gorm:"not null" form:"idowner" json:"idOwner"`
 	Password		string `form:"password" json:"password"`
 	Participants []Participant
-	BannedList []Banned
 }
 
 type Participant struct{
@@ -28,11 +27,11 @@ type Participant struct{
 type Banned struct{
 	Id 				int		`gorm:"primary_key" form:"id" json:"id"`
 	IdRoom			int		`gorm:"not null" form:"idroom" json:"idRoom"`
-	IdBanned 	int		`gorm:"not null" form:"idbanned" json:"idBanned"`
+	IdBanned 		int		`gorm:"not null" form:"idbanned" json:"idBanned"`
 }
 
 type BannedInput struct{
-	Id int
+	IdOwner 		int
 }
 
 func rem(s []int, i int) []int {
@@ -49,12 +48,12 @@ func rem(s []int, i int) []int {
 
 func InitDb() *gorm.DB {
 	// Openning file
-	db, err := gorm.Open("mysql", "roomsUser:123@tcp(192.168.99.103:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "root:123@tcp(rooms-db:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
 	//	db, err := gorm.Open("mysql", "roomsUser:123@tcp(0.0.0.0:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
-
+	//defer db.Close()
 	// Display SQL queries
 	db.LogMode(true)
-	fmt.Println(db)
+	//fmt.Println(db)
 	// Error
 	if err != nil {
 		fmt.Println("JAJAJAJAJA")
@@ -63,18 +62,18 @@ func InitDb() *gorm.DB {
 	}
 	// Creating the table
 	if !db.HasTable(&Room{}) {
-		db.CreateTable(&Room{})
+		//db.CreateTable(&Room{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Room{})
 	}
 	if !db.HasTable(&Participant{}) {
-		db.CreateTable(&Participant{})
+		//db.CreateTable(&Participant{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Participant{})
 	}
 	if !db.HasTable(&Banned{}) {
-		db.CreateTable(&Banned{})
+		//db.CreateTable(&Banned{})
 		db.Set("gorm:table_options", "ENGINE=InnoDB").CreateTable(&Banned{})
 	}
-	defer db.Close()
+
 	return db
 }
 
@@ -116,19 +115,18 @@ func PostBanned(c *gin.Context) {
 	fmt.Println(bannedFromBody)
 
 	var roomFromDB Room
-	db.Where("id_room = ?", idroom ).First(&roomFromDB)
+	db.Table("rooms").Where("id_room = ?", idroom ).First(&roomFromDB)
 	//this room exist?
 	if roomFromDB.NameRoom != ""{//exist this room in database
-		var newBanned = Banned{ IdRoom: idroom, IdBanned: bannedFromBody.Id }
-
+		var newBanned = Banned{ IdRoom: idroom, IdBanned: bannedFromBody.IdOwner }
 		db.Create(&newBanned)
-		var banned []Banned
-		db.Where("id_room = ?", idroom).Find(&banned)
-		roomFromDB.BannedList = banned
-		db.Save(roomFromDB)
-		c.JSON(200, roomFromDB)
+		//var banned []Banned
+		//db.Where("id_room = ?", idroom).Find(&banned)
+		//roomFromDB.BannedList = banned
+		//db.Save(roomFromDB)
+		c.JSON(200, newBanned)
 	}else{
-		//Bad request, the participant wants to join in a inexistent room
+		//Bad request, the participant wants to be banned in a inexistent room
 		c.JSON(404, gin.H{"error": "doesn't exist the room"})
 	}
 }
@@ -139,6 +137,8 @@ func PostRoom(c *gin.Context) {
 
 	var roomFromBody Room
 	c.Bind(&roomFromBody)
+	fmt.Println(roomFromBody)
+	fmt.Println(roomFromBody)
 
 	//if exists the idroom(is a participant) or the nameroom(is a owner)
 	if roomFromBody.NameRoom != "" || roomFromBody.IdRoom != 0{
@@ -153,17 +153,16 @@ func PostRoom(c *gin.Context) {
 			//this room exist?
 			if roomFromDB.NameRoom != ""{//exist this room in database
 				var banned Banned
-				db.Where("id_room = ? AND id_banned = ?", roomFromDB.IdRoom, roomFromBody.IdOwner).First(&banned)
+				db.Table("banneds").Where("id_room = ? AND id_banned = ?", roomFromDB.IdRoom, roomFromBody.IdOwner).First(&banned)
 				if banned.IdBanned != 0 {
 					c.JSON(401, gin.H{"error": "banned"})
 				} else {
 					var newPart = Participant{ IdRoom: roomFromDB.IdRoom, IdParticipant: roomFromBody.IdOwner }
-
 					db.Create(&newPart)
 					var participants []Participant
-					db.Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
+					db.Table("participants").Where("id_room = ?", roomFromDB.IdRoom).Find(&participants)
 					roomFromDB.Participants = participants
-					db.Save(roomFromDB)
+					//db.Save(roomFromDB)
 					c.JSON(200, roomFromDB)
 				}
 			}else{
@@ -183,15 +182,21 @@ func PostRoom(c *gin.Context) {
 func GetRooms(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
-	// Close connection database
-	defer db.Close()
 
 	var rooms []Room
-	// SELECT * FROM users
+	// SELECT * FROM rooms
+	fmt.Println("todo va bien 1")
 	db.Find(&rooms)
+	fmt.Println("todo va bien 2")
+
+	fmt.Println(rooms)
+	//db.Find(&rooms)
 
 	// Display JSON result
 	c.JSON(200, rooms)
+
+	// Close connection database
+	defer db.Close()
 
 	// curl -i http://localhost:5000/rooms
 }
@@ -199,26 +204,25 @@ func GetRooms(c *gin.Context) {
 func GetRoom(c *gin.Context) {
 	// Connection to the database
 	db := InitDb()
-	// Close connection database
-	defer db.Close()
 
 	idroom := c.Params.ByName("idroom")
 	var room Room
 	// SELECT * FROM users WHERE id = 1;
-	db.Where("id_room = ?",idroom).First(&room)
+	db.Table("rooms").Where("id_room = ?",idroom).First(&room)
 
 	if room.IdRoom != 0 {
 		// Display JSON result
 		var participants []Participant
-		db.Where("id_room = ?",idroom).Find(&participants)
+		db.Table("participants").Where("id_room = ?",idroom).Find(&participants)
 		room.Participants = participants
-		db.Save(&room)
 		c.JSON(200, room)
 	} else {
 		// Display JSON error
 		c.JSON(404, gin.H{"error": "Room not found"})
 	}
 
+	// Close connection database
+	defer db.Close()
 	// curl -i http://localhost:5000/rooms/1
 }
 
@@ -237,7 +241,7 @@ func DeleteRoom(c *gin.Context) {
 
 	var roomFromDB Room
 	// SELECT * FROM users WHERE id = 1;
-	db.Where("id_room = ?",idroom).First(&roomFromDB)
+	db.Table("rooms").Where("id_room = ?",idroom).First(&roomFromDB)
 
 
 	if roomFromDB.NameRoom != "" {
@@ -245,25 +249,25 @@ func DeleteRoom(c *gin.Context) {
 		if roomFromDB.IdOwner == roomFromBody.IdOwner{
 			//get all participants of this room
 			var participants []Participant
-			db.Where("id_room = ?",idroom).Find(&participants)
+			db.Table("participants").Where("id_room = ?",idroom).Find(&participants)
 			//Delete all participants
-			db.Delete(&participants)
+			db.Table("participants").Delete(&participants)
 			//get all banned of this room
 			var banned []Banned
-			db.Where("id_room = ?",idroom).Find(&banned)
+			db.Table("banneds").Where("id_room = ?",idroom).Find(&banned)
 			//Delete all banned
-			db.Delete(&banned)
+			db.Table("banneds").Delete(&banned)
 			//Delete the room of database
-			db.Delete(&roomFromDB)
+			db.Table("rooms").Delete(&roomFromDB)
 			roomFromDB.Participants = participants
 			// Display JSON result
 			c.JSON(200, roomFromDB )
 		}else{
 			//is a participant
-			var participant2Delete []Participant
-			db.Where("id_participant = ?",roomFromBody.IdOwner).Find(&participant2Delete)
-			db.Where("id_participant = ?",roomFromBody.IdOwner).Delete(&Participant{})
-			//db.Delete(&participant2Delete)
+			//var participant2Delete []Participant
+			//db.Table("participants").Where("id_participant = ?",roomFromBody.IdOwner).Find(&participant2Delete)
+			db.Table("participants").Where("id_participant = ?",roomFromBody.IdOwner).Delete(&Participant{})
+			//db.Table("participants").Delete(&participant2Delete)
 			c.JSON(200, roomFromBody)
 		}
 

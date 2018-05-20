@@ -4,7 +4,7 @@ services:
   rooms-db:
     image: mysql:5.7.22
     ports:
-      - "3306:3306"
+      - "3310:3306"
     environment:
       MYSQL_ROOT_PASSWORD: 123
       MYSQL_USER: roomsUser
