@@ -7,7 +7,7 @@ import(
 )
 
 func main() {
-  db, err := gorm.Open("mysql", "roomsUser:123@tcp(127.0.0.1:3306)/rooms?charset=utf8&parseTime=True&loc=Local")
+  db, err := gorm.Open("mysql", "roomsUser:123@tcp(127.0.0.1    :3306)/rooms?charset=utf8&parseTime=True&loc=Local")
   if err == nil{
   	fmt.Println("NO HAY ERROR")
   	fmt.Println(err)
@@ -15,5 +15,7 @@ func main() {
   	fmt.Println("HAY ERROR")
   	fmt.Println(err)
   }
+
+  
   defer db.Close()
 }
